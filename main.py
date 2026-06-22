@@ -4,7 +4,7 @@ import joblib
 
 app = FastAPI()
 
-model = joblib.load("mandi_price_model.pkl")
+model = joblib.load("apmc_price_model.pkl")
 
 FEATURE_COLUMNS = [
     "District",
