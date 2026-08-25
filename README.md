@@ -1,231 +1,49 @@
 # 🌾 AgroAid Mandi Price Prediction API
 
-## Overview
-
-The AgroAid Mandi Price Prediction API is a Machine Learning-powered service that predicts agricultural commodity prices using historical mandi market data.
-
-The API is designed to integrate with the AgroAid platform and provide:
-
-* Real-time price prediction
-* 7-day price forecasting
-* Market trend analysis
-* Confidence scoring
-* Sell/Hold recommendations
-
-The model is trained on historical APMC mandi data and deployed using FastAPI and Render.
+An ML-powered service that predicts agricultural commodity prices (mandi prices) using historical APMC market data, built with **FastAPI**, **LightGBM**, and **Scikit-Learn**.
 
 ---
 
-# Project Architecture
+## ⚡ Quick Start (Run locally)
 
-```
-AgroAid App
-      │
-      ▼
-Supabase Database
-      │
-      ▼
-Feature Generation
-      │
-      ▼
-Mandi Prediction API
-      │
-      ▼
-LightGBM Model
-      │
-      ▼
-Prediction Results
+### 1. Install Dependencies
+```bash
+pip install -r requirements.txt
 ```
 
----
-
-# Technology Stack
-
-### Backend
-
-* Python
-* FastAPI
-* Pandas
-* NumPy
-
-### Machine Learning
-
-* LightGBM
-* Scikit-Learn
-* Joblib
-
-### Database
-
-* Supabase PostgreSQL
-
-### Deployment
-
-* Render
-
----
-
-# Project Structure
-
+### 2. Start the API Server
+```bash
+python main.py
 ```
-mandi-price-api/
-│
-├── main.py
-├── requirements.txt
-├── district_mapping.json
-├── commodity_mapping.json
-├── README.md
-│
-├── mandi_price_model.pkl
-│
-└── training/
-    ├── train_model.ipynb
-    ├── clean_apmc_data.csv
-    └── feature_engineering.py
-```
+*(The server will start on `http://localhost:8000`)*
+
+### 3. Open Interactive Web Documentation (Swagger UI)
+Open your browser and visit:
+👉 **[http://localhost:8000/docs](http://localhost:8000/docs)**
 
 ---
 
-# File Descriptions
+## 📋 API Data Request Format
 
-## main.py
+All prediction and analytics endpoints (`/predict`, `/forecast`, `/trend`, `/confidence`, `/recommendation`) expect a `POST` request with a **JSON body** containing the following 9 numerical fields:
 
-Main FastAPI application.
-
-Responsibilities:
-
-* Load trained model
-* Accept API requests
-* Generate predictions
-* Generate forecasts
-* Calculate trends
-* Calculate confidence scores
-* Generate recommendations
-
-Available endpoints:
-
-* GET /
-* POST /predict
-* POST /forecast
-* POST /trend
-* POST /confidence
-* POST /recommendation
+| Field Name | Type | Description | Example Value |
+| :--- | :--- | :--- | :--- |
+| `District` | Integer | Encoded District numerical ID | `47` |
+| `Commodity` | Integer | Encoded Commodity numerical ID | `58` |
+| `Min_Price` | Float / Int | Current minimum mandi price (in ₹) | `5000` |
+| `Max_Price` | Float / Int | Current maximum mandi price (in ₹) | `5500` |
+| `lag_1` | Float / Int | Yesterday's modal price (1 day ago in ₹) | `5100` |
+| `lag_7` | Float / Int | Modal price 7 days ago (in ₹) | `4950` |
+| `lag_30` | Float / Int | Modal price 30 days ago (in ₹) | `4800` |
+| `rolling_7` | Float / Int | 7-day moving average modal price (in ₹) | `5000` |
+| `rolling_30` | Float / Int | 30-day moving average modal price (in ₹) | `4900` |
 
 ---
 
-## mandi_price_model.pkl
+## 📦 Copy-Paste Ready Sample JSON Payload
 
-Serialized LightGBM model.
-
-Generated after training.
-
-Used for:
-
-* Single day prediction
-* Forecast generation
-
----
-
-## district_mapping.json
-
-District encoder mapping.
-
-Example:
-
-```json
-{
-  "Rewa": 47,
-  "Bhopal": 12
-}
-```
-
-Purpose:
-
-Convert district names into numerical values used by the model.
-
----
-
-## commodity_mapping.json
-
-Commodity encoder mapping.
-
-Example:
-
-```json
-{
-  "Wheat": 58,
-  "Soybean": 125
-}
-```
-
-Purpose:
-
-Convert commodity names into numerical values used by the model.
-
----
-
-## requirements.txt
-
-Contains all Python dependencies required for deployment.
-
-Example:
-
-```txt
-fastapi
-uvicorn
-pandas
-numpy
-lightgbm
-scikit-learn
-joblib
-```
-
----
-
-# Machine Learning Features
-
-The model uses the following engineered features:
-
-| Feature    | Description                 |
-| ---------- | --------------------------- |
-| District   | Encoded district            |
-| Commodity  | Encoded commodity           |
-| Min_Price  | Current minimum mandi price |
-| Max_Price  | Current maximum mandi price |
-| lag_1      | Previous day's modal price  |
-| lag_7      | Modal price 7 days ago      |
-| lag_30     | Modal price 30 days ago     |
-| rolling_7  | 7-day average modal price   |
-| rolling_30 | 30-day average modal price  |
-
----
-
-# Prediction Workflow
-
-## Step 1
-
-User selects:
-
-* State
-* District
-* Commodity
-
----
-
-## Step 2
-
-AgroAid fetches feature values from Supabase.
-
-RPC Function:
-
-```sql
-get_prediction_features()
-```
-
----
-
-## Step 3
-
-Frontend sends request:
+Use this exact JSON body when testing any endpoint:
 
 ```json
 {
@@ -243,210 +61,126 @@ Frontend sends request:
 
 ---
 
-## Step 4
+## 🚀 How to Test the API
 
-FastAPI loads the model.
+### Method 1: Using Interactive Browser UI (Recommended)
+1. Open `http://localhost:8000/docs` in your browser.
+2. Select an endpoint (e.g., `POST /predict`).
+3. Click **Try it out**.
+4. Paste the sample JSON above into the **Request body** box.
+5. Click **Execute**.
 
-```python
-model.predict()
-```
-
----
-
-## Step 5
-
-Predicted mandi price is returned.
-
-Example:
-
-```json
-{
-  "predicted_price": 5247.99
-}
-```
-
----
-
-# Forecast API
-
-Endpoint:
-
-```
-POST /forecast
-```
-
-Generates a rolling 7-day prediction.
-
-Returns:
-
-```json
-{
-  "forecast": [
-    {
-      "day": 1,
-      "predicted_price": 5247
-    }
-  ]
-}
-```
-
----
-
-# Trend API
-
-Endpoint:
-
-```
-POST /trend
-```
-
-Possible outputs:
-
-* UP
-* DOWN
-* STABLE
-
-Example:
-
-```json
-{
-  "trend": "UP"
-}
-```
-
----
-
-# Confidence API
-
-Endpoint:
-
-```
-POST /confidence
-```
-
-Returns:
-
-```json
-{
-  "confidence": 87.4
-}
-```
-
-Range:
-
-```
-50 - 95
-```
-
----
-
-# Recommendation API
-
-Endpoint:
-
-```
-POST /recommendation
-```
-
-Possible outputs:
-
-* HOLD
-* SELL
-* SELL_NOW
-
-Example:
-
-```json
-{
-  "recommendation": "HOLD"
-}
-```
-
----
-
-# Supabase Integration
-
-Data source:
-
-```sql
-mandi_prices
-```
-
-Prediction features generated through:
-
-```sql
-get_prediction_features()
-```
-
-Used to calculate:
-
-* lag_1
-* lag_7
-* lag_30
-* rolling_7
-* rolling_30
-
----
-
-# Local Development
-
-Install dependencies:
-
+### Method 2: Using cURL (Linux / macOS / Git Bash)
 ```bash
-pip install -r requirements.txt
+curl -X 'POST' \
+  'http://localhost:8000/predict' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "District": 47,
+  "Commodity": 58,
+  "Min_Price": 5000,
+  "Max_Price": 5500,
+  "lag_1": 5100,
+  "lag_7": 4950,
+  "lag_30": 4800,
+  "rolling_7": 5000,
+  "rolling_30": 4900
+}'
 ```
 
-Run application:
-
-```bash
-uvicorn main:app --reload
-```
-
-Swagger UI:
-
-```text
-http://localhost:8000/docs
-```
-
----
-
-# Deployment
-
-Platform:
-
-Render
-
-Build Command:
-
-```bash
-pip install -r requirements.txt
-```
-
-Start Command:
-
-```bash
-uvicorn main:app --host 0.0.0.0 --port $PORT
+### Method 3: Using PowerShell (Windows)
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/predict" -Method Post -ContentType "application/json" -Body '{"District": 47, "Commodity": 58, "Min_Price": 5000, "Max_Price": 5500, "lag_1": 5100, "lag_7": 4950, "lag_30": 4800, "rolling_7": 5000, "rolling_30": 4900}'
 ```
 
 ---
 
-# Future Enhancements
+## 📡 API Endpoints & Expected Outputs
 
-* Multi-market comparison
-* Seasonal forecasting
-* Weather impact analysis
-* AI crop advisory
-* Best selling day prediction
-* Price alert notifications
-* WhatsApp integration
-* News-based market intelligence
+### 1. `POST /predict`
+Predicts the mandi price for a commodity.
+
+* **Sample Response:**
+  ```json
+  {
+    "predicted_price": 5247.99
+  }
+  ```
 
 ---
 
-# Author
+### 2. `POST /forecast`
+Generates a 7-day rolling daily price forecast.
 
-Shivam Pandey
+* **Sample Response:**
+  ```json
+  {
+    "forecast": [
+      { "day": 1, "predicted_price": 5247.99 },
+      { "day": 2, "predicted_price": 5253.12 },
+      { "day": 3, "predicted_price": 5260.45 },
+      { "day": 4, "predicted_price": 5265.80 },
+      { "day": 5, "predicted_price": 5270.15 },
+      { "day": 6, "predicted_price": 5275.30 },
+      { "day": 7, "predicted_price": 5280.90 }
+    ]
+  }
+  ```
 
-AgroAid AI Platform
+---
 
-AI-Powered Agricultural Intelligence & Mandi Analytics
+### 3. `POST /trend`
+Calculates market price direction (`UP`, `DOWN`, or `STABLE`).
+
+* **Sample Response:**
+  ```json
+  {
+    "current_price": 5100,
+    "predicted_price": 5247.99,
+    "trend": "UP"
+  }
+  ```
+
+---
+
+### 4. `POST /confidence`
+Returns a confidence percentage score (between 50% and 95%) based on market volatility.
+
+* **Sample Response:**
+  ```json
+  {
+    "predicted_price": 5247.99,
+    "confidence": 90.92
+  }
+  ```
+
+---
+
+### 5. `POST /recommendation`
+Provides an actionable advice for farmers: `HOLD`, `SELL`, or `SELL_NOW`.
+
+* **Sample Response:**
+  ```json
+  {
+    "current_price": 5100,
+    "predicted_price": 5247.99,
+    "expected_change_percent": 2.9,
+    "recommendation": "SELL"
+  }
+  ```
+
+---
+
+## 📂 Project Files
+
+```
+mandi-prize/
+├── main.py                   # FastAPI backend server & route handlers
+├── requirements.txt           # Required Python packages
+├── apmc_price_model.pkl       # Trained LightGBM model
+├── district_encoder.pkl       # LabelEncoder for district names
+├── commodity_encoder.pkl      # LabelEncoder for commodity names
+├── commodity_mapping.json     # Encoded mapping dictionary for commodities
+├── district_mapping.json      # Encoded mapping dictionary for districts
+└── README.md                  # Project documentation & API guide
+```
