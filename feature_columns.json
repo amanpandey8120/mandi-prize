@@ -1,0 +1,11 @@
+[
+    "District_Code",
+    "Commodity_Code",
+    "Min_Price",
+    "Max_Price",
+    "lag_1",
+    "lag_7",
+    "lag_30",
+    "rolling_7",
+    "rolling_30"
+]

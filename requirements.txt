@@ -1,7 +1,10 @@
-fastapi
-uvicorn
-pandas
-numpy
-lightgbm
-scikit-learn
-joblib
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+lightgbm==4.6.0
+pandas==2.2.3
+numpy==2.2.5
+scikit-learn==1.6.1
+joblib==1.4.2
+supabase==2.15.2
+python-dotenv==1.1.0
+pydantic==2.11.3

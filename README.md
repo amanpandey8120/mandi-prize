@@ -1,452 +1,194 @@
-# 🌾 AgroAid Mandi Price Prediction API
+﻿# 🌾 AgroAid Mandi Price Prediction API — v2.0
 
-## Overview
-
-The AgroAid Mandi Price Prediction API is a Machine Learning-powered service that predicts agricultural commodity prices using historical mandi market data.
-
-The API is designed to integrate with the AgroAid platform and provide:
-
-* Real-time price prediction
-* 7-day price forecasting
-* Market trend analysis
-* Confidence scoring
-* Sell/Hold recommendations
-
-The model is trained on historical APMC mandi data and deployed using FastAPI and Render.
+Production-ready FastAPI backend powered by a trained **LightGBM** model.  
+Predicts agricultural commodity modal prices using historical mandi data from Supabase.
 
 ---
 
-# Project Architecture
+## Model
 
-```
-AgroAid App
-      │
-      ▼
-Supabase Database
-      │
-      ▼
-Feature Generation
-      │
-      ▼
-Mandi Prediction API
-      │
-      ▼
-LightGBM Model
-      │
-      ▼
-Prediction Results
-```
+| Property | Value |
+|----------|-------|
+| Algorithm | LightGBM (LGBMRegressor) |
+| File | `mandi_lightgbm_model.pkl` |
+| Test MAE | 164.17 |
+| Test RMSE | 445.81 |
+| Test R² | 0.9675 |
+| Target | `Modal_Price` |
 
 ---
 
-# Technology Stack
+## Features (exact order required by model)
 
-### Backend
-
-* Python
-* FastAPI
-* Pandas
-* NumPy
-
-### Machine Learning
-
-* LightGBM
-* Scikit-Learn
-* Joblib
-
-### Database
-
-* Supabase PostgreSQL
-
-### Deployment
-
-* Render
+| # | Feature | Source |
+|---|---------|--------|
+| 1 | `District_Code` | `district_mapping.json` |
+| 2 | `Commodity_Code` | `commodity_mapping.json` |
+| 3 | `Min_Price` | Supabase RPC |
+| 4 | `Max_Price` | Supabase RPC |
+| 5 | `lag_1` | Supabase RPC |
+| 6 | `lag_7` | Supabase RPC |
+| 7 | `lag_30` | Supabase RPC |
+| 8 | `rolling_7` | Supabase RPC |
+| 9 | `rolling_30` | Supabase RPC |
 
 ---
 
-# Project Structure
+## Project Structure
 
 ```
-mandi-price-api/
+mandi-prize/
+├── main.py                    # FastAPI application
+├── mandi_lightgbm_model.pkl   # Trained LightGBM model
+├── feature_columns.json       # Feature column names & order
+├── district_mapping.json      # District name → District_Code
+├── commodity_mapping.json     # Commodity name → Commodity_Code
 │
-├── main.py
+├── services/
+│   ├── __init__.py
+│   ├── model_service.py       # Model loading & predict()
+│   └── supabase_service.py    # Supabase RPC feature fetching
+│
+├── schemas/
+│   ├── __init__.py
+│   └── prediction.py          # Pydantic request/response models
+│
 ├── requirements.txt
-├── district_mapping.json
-├── commodity_mapping.json
-├── README.md
-│
-├── mandi_price_model.pkl
-│
-└── training/
-    ├── train_model.ipynb
-    ├── clean_apmc_data.csv
-    └── feature_engineering.py
+├── render.yaml                # Render deployment config
+├── .env.example               # Environment variable template
+├── .gitignore
+└── README.md
 ```
 
 ---
 
-# File Descriptions
+## API Endpoints
 
-## main.py
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | API status |
+| GET | `/health` | Health check + model status |
+| POST | `/predict` | Single-day modal price prediction |
+| POST | `/forecast` | Rolling 7-day forecast |
+| POST | `/trend` | Price trend (UP/STABLE/DOWN) |
+| POST | `/confidence` | Confidence score (50–95) |
+| POST | `/recommendation` | Sell/Hold recommendation |
 
-Main FastAPI application.
-
-Responsibilities:
-
-* Load trained model
-* Accept API requests
-* Generate predictions
-* Generate forecasts
-* Calculate trends
-* Calculate confidence scores
-* Generate recommendations
-
-Available endpoints:
-
-* GET /
-* POST /predict
-* POST /forecast
-* POST /trend
-* POST /confidence
-* POST /recommendation
-
----
-
-## mandi_price_model.pkl
-
-Serialized LightGBM model.
-
-Generated after training.
-
-Used for:
-
-* Single day prediction
-* Forecast generation
-
----
-
-## district_mapping.json
-
-District encoder mapping.
-
-Example:
+### POST /predict — Request
 
 ```json
 {
-  "Rewa": 47,
-  "Bhopal": 12
+  "state": "Madhya Pradesh",
+  "district": "Bhopal",
+  "commodity": "Wheat"
 }
 ```
 
-Purpose:
-
-Convert district names into numerical values used by the model.
-
----
-
-## commodity_mapping.json
-
-Commodity encoder mapping.
-
-Example:
+### POST /predict — Response
 
 ```json
 {
-  "Wheat": 58,
-  "Soybean": 125
-}
-```
-
-Purpose:
-
-Convert commodity names into numerical values used by the model.
-
----
-
-## requirements.txt
-
-Contains all Python dependencies required for deployment.
-
-Example:
-
-```txt
-fastapi
-uvicorn
-pandas
-numpy
-lightgbm
-scikit-learn
-joblib
-```
-
----
-
-# Machine Learning Features
-
-The model uses the following engineered features:
-
-| Feature    | Description                 |
-| ---------- | --------------------------- |
-| District   | Encoded district            |
-| Commodity  | Encoded commodity           |
-| Min_Price  | Current minimum mandi price |
-| Max_Price  | Current maximum mandi price |
-| lag_1      | Previous day's modal price  |
-| lag_7      | Modal price 7 days ago      |
-| lag_30     | Modal price 30 days ago     |
-| rolling_7  | 7-day average modal price   |
-| rolling_30 | 30-day average modal price  |
-
----
-
-# Prediction Workflow
-
-## Step 1
-
-User selects:
-
-* State
-* District
-* Commodity
-
----
-
-## Step 2
-
-AgroAid fetches feature values from Supabase.
-
-RPC Function:
-
-```sql
-get_prediction_features()
-```
-
----
-
-## Step 3
-
-Frontend sends request:
-
-```json
-{
-  "District": 47,
-  "Commodity": 58,
-  "Min_Price": 5000,
-  "Max_Price": 5500,
-  "lag_1": 5100,
-  "lag_7": 4950,
-  "lag_30": 4800,
-  "rolling_7": 5000,
-  "rolling_30": 4900
+  "state": "Madhya Pradesh",
+  "district": "Bhopal",
+  "commodity": "Wheat",
+  "predicted_price": 2347.85
 }
 ```
 
 ---
 
-## Step 4
+## Environment Variables
 
-FastAPI loads the model.
+Copy `.env.example` → `.env` and fill in your values:
 
-```python
-model.predict()
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-anon-or-service-role-key
+FRONTEND_URL=https://your-frontend-domain.com
 ```
+
+> ⚠️ Never commit `.env` to Git.
 
 ---
 
-## Step 5
-
-Predicted mandi price is returned.
-
-Example:
-
-```json
-{
-  "predicted_price": 5247.99
-}
-```
-
----
-
-# Forecast API
-
-Endpoint:
-
-```
-POST /forecast
-```
-
-Generates a rolling 7-day prediction.
-
-Returns:
-
-```json
-{
-  "forecast": [
-    {
-      "day": 1,
-      "predicted_price": 5247
-    }
-  ]
-}
-```
-
----
-
-# Trend API
-
-Endpoint:
-
-```
-POST /trend
-```
-
-Possible outputs:
-
-* UP
-* DOWN
-* STABLE
-
-Example:
-
-```json
-{
-  "trend": "UP"
-}
-```
-
----
-
-# Confidence API
-
-Endpoint:
-
-```
-POST /confidence
-```
-
-Returns:
-
-```json
-{
-  "confidence": 87.4
-}
-```
-
-Range:
-
-```
-50 - 95
-```
-
----
-
-# Recommendation API
-
-Endpoint:
-
-```
-POST /recommendation
-```
-
-Possible outputs:
-
-* HOLD
-* SELL
-* SELL_NOW
-
-Example:
-
-```json
-{
-  "recommendation": "HOLD"
-}
-```
-
----
-
-# Supabase Integration
-
-Data source:
-
-```sql
-mandi_prices
-```
-
-Prediction features generated through:
-
-```sql
-get_prediction_features()
-```
-
-Used to calculate:
-
-* lag_1
-* lag_7
-* lag_30
-* rolling_7
-* rolling_30
-
----
-
-# Local Development
-
-Install dependencies:
+## Local Development
 
 ```bash
+# Install dependencies
 pip install -r requirements.txt
-```
 
-Run application:
+# Create .env with your Supabase credentials
+cp .env.example .env
 
-```bash
+# Run the API
 uvicorn main:app --reload
-```
 
-Swagger UI:
-
-```text
+# Open Swagger UI
 http://localhost:8000/docs
 ```
 
 ---
 
-# Deployment
+## Supabase RPC
 
-Platform:
+The API expects a Supabase RPC function named `get_prediction_features` that accepts:
 
-Render
+| Parameter | Type |
+|-----------|------|
+| `p_state` | text |
+| `p_district` | text |
+| `p_commodity` | text |
 
-Build Command:
+And returns a row containing: `Min_Price`, `Max_Price`, `lag_1`, `lag_7`, `lag_30`, `rolling_7`, `rolling_30`.
 
-```bash
+---
+
+## Deployment on Render
+
+**Build Command:**
+```
 pip install -r requirements.txt
 ```
 
-Start Command:
-
-```bash
+**Start Command:**
+```
 uvicorn main:app --host 0.0.0.0 --port $PORT
 ```
 
----
-
-# Future Enhancements
-
-* Multi-market comparison
-* Seasonal forecasting
-* Weather impact analysis
-* AI crop advisory
-* Best selling day prediction
-* Price alert notifications
-* WhatsApp integration
-* News-based market intelligence
+**Environment Variables** (set in Render dashboard):
+- `SUPABASE_URL`
+- `SUPABASE_KEY`
+- `FRONTEND_URL`
 
 ---
 
-# Author
+## Files to Push to GitHub
 
-Shivam Pandey
+✅ Include:
+- `main.py`
+- `mandi_lightgbm_model.pkl`
+- `feature_columns.json`
+- `district_mapping.json`
+- `commodity_mapping.json`
+- `services/`
+- `schemas/`
+- `requirements.txt`
+- `render.yaml`
+- `.env.example`
+- `.gitignore`
+- `README.md`
 
-AgroAid AI Platform
+❌ Do NOT push:
+- `.env`
+- `apmc_price_model.pkl`
+- `commodity_encoder.pkl`
+- `district_encoder.pkl`
+- `__pycache__/`
+- `.venv/`
 
-AI-Powered Agricultural Intelligence & Mandi Analytics
+---
+
+## Author
+
+Shivam Pandey — AgroAid AI Platform  
+*AI-Powered Agricultural Intelligence & Mandi Analytics*
